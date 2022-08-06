@@ -1,0 +1,44 @@
+body, html {
+    padding: 0;
+    margin: 0;
+}
+
+.App {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    flex: 0 0 250px;
+    padding: 20px;
+    position: relative;
+    transition: all 0.1s ease-in-out;
+}
+
+.sidebar .toggle {
+    /* Position halfway down page, jutting out slightly to the right */
+    position: absolute;
+    top: 50%;
+    right: -25px;
+    transform: rotate(90deg);
+    padding: 10px;
+    cursor: pointer;
+    z-index: 100;
+}
+.sidebar:not(.open) {
+    flex: 0;
+}
+
+.sidebar:not(.open) .sidebar__header, .sidebar:not(.open) .sidebar__content {
+    display: none;
+}
+
+.column {
+    height: 95%;
+    display: flex;
+    width: 300px;
+    flex-direction: column;
+    background: linear-gradient(to bottom, #ececec 80%, #fafafa81);
+
+}
+
