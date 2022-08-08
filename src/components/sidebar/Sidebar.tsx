@@ -2,20 +2,23 @@ import { EffectCallback, useEffect, useState } from "react";
 import { BoardType } from "../../utils/definitions";
 import {
   asyncAddItem,
-  asyncGetAllBoards,
+  asyncGetItems,
+  asyncUpdateItem,
   asyncDeleteItem,
-  asyncUpdateBoard,
 } from "../../utils/db";
 import { generateNewBoard } from "../../utils/generate";
 import { useSelector, useDispatch } from "react-redux";
 import { addBoard, removeBoard, updateBoard } from "../../redux/boardSlice";
 import { setActiveBoard } from "../../redux/activeBoardSlice";
+import { addColumns, clearColumns } from "../../redux/columnSlice";
 
 import { BoardButton } from "./BoardButton";
 import { RootState } from "../../store";
 import { ClipLoader } from "react-spinners";
 
 function Sidebar(props: { [key: string]: any }): JSX.Element {
+  const dispatch = useDispatch();
+
   const [isOpen, setIsOpen] = useState(true);
   const [overrideScreenSizeCollapse, setOverrideScreenSizeCollapse] =
     useState(false);
@@ -23,14 +26,11 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
   const [openMenu, setMenuIsOpen] = useState(-1);
   const [renamingBoard, setRenamingBoard] = useState(-1);
 
-  const dispatch = useDispatch();
   const boards = useSelector((state: RootState) => state.boards.value);
-  const activeBoardId = useSelector(
+
+  const activeBoard = useSelector(
     (state: RootState) => state.activeBoard.value
   );
-  const activeBoard = activeBoardId
-    ? boards.find((board: BoardType) => board.id === activeBoardId)
-    : null;
 
   useEffect(() => {
     // add event listener to close sidebar when window is resized less than 768px
@@ -79,23 +79,23 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
         <div className="sidebar__content flex flex-col align-top h-full">
           <div className="flex mt-5 flex-col pt-5">
             {boards &&
-              boards.map((board: BoardType) =>
-                BoardButton({
-                  board,
-                  activeBoard,
-                  handleSelectBoard,
-                  setMenuIsOpen,
-                  openMenu,
-                  handleDeleteBoard,
-                  handleRenameBoard,
-                  setRenamingBoard,
-                  renamingBoard,
-                })
-              )}
+              boards.map((board: BoardType) => (
+                <BoardButton
+                  key={board.id}
+                  board={board}
+                  setMenuIsOpen={setMenuIsOpen}
+                  setRenamingBoard={setRenamingBoard}
+                  handleSelectBoard={handleSelectBoard}
+                  openMenu={openMenu}
+                  renamingBoard={renamingBoard}
+                  activeBoard={activeBoard}
+                  handleDeleteBoard={handleDeleteBoard}
+                />
+              ))}
           </div>
           <button
             className="m-auto mb-0 bg-indigo-500 w-1/2 p-3 rounded-md hover:bg-indigo-400 transition-all"
-            onClick={createNewBoard}
+            onClick={handleCreateBoard}
           >
             Add Board
           </button>
@@ -104,10 +104,55 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
     );
   }
 
-  function createNewBoard(): void {
-    const newBoard = generateNewBoard(boards.length);
-    asyncAddItem(newBoard, "boards");
+  function handleCreateBoard(): void {
+    const newBoard = generateNewBoard(boards.slice().length);
+    asyncAddItem("boards", newBoard);
     dispatch(addBoard([newBoard]));
+    dispatch(setActiveBoard(newBoard));
+  }
+
+  async function handleDeleteBoard(e: Event, board: BoardType): Promise<void> {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (board.id === activeBoard!.id) {
+      const oldActiveIndex = boards.findIndex(
+        (b: BoardType) => b.id === activeBoard!.id
+      );
+      const newActiveIndex = oldActiveIndex === 0 ? 1 : oldActiveIndex - 1;
+
+      const newActiveBoard = boards
+        .slice()
+        .sort((a: any, b: any) => b.order - a.order)[newActiveIndex];
+
+      handleSelectBoard(newActiveBoard);
+    }
+
+    await asyncDeleteItem("boards", board.id);
+    dispatch(removeBoard(board));
+  }
+
+  async function handleUpdateBoard(board: BoardType): Promise<void> {
+    await asyncUpdateItem("boards", board.id, board);
+    dispatch(updateBoard(board));
+  }
+
+  async function handleSelectBoard(board: BoardType): Promise<void> {
+    dispatch(setActiveBoard(board));
+    asyncGetItems("columns", board.columns as string[]).then((columns) => {
+      console.log(columns);
+      dispatch(clearColumns());
+      dispatch(addColumns(columns));
+    });
+  }
+
+  async function handleRenameBoard(
+    id: string,
+    updates: { [key: string]: any },
+    board: BoardType
+  ): Promise<void> {
+    await asyncUpdateItem("boards", id, updates);
+    dispatch(updateBoard({ ...board, ...updates }));
   }
 
   function handleClick(): void {
@@ -115,25 +160,6 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
     if (window.innerWidth < 768) {
       setOverrideScreenSizeCollapse(true);
     }
-  }
-
-  function handleSelectBoard(board: BoardType): void {
-    dispatch(setActiveBoard(board.id));
-  }
-
-  async function handleDeleteBoard(board: BoardType): Promise<void> {
-    await asyncDeleteItem(board, "boards");
-    if (board.id === activeBoardId) {
-      // select the closest board to the one that was deleted
-      const closestBoard = boards.find((b: BoardType) => b.id !== board.id);
-      dispatch(setActiveBoard(closestBoard.id));
-    }
-
-    dispatch(removeBoard(board));
-  }
-  async function handleRenameBoard(board: BoardType): Promise<void> {
-    await asyncUpdateBoard(board);
-    dispatch(updateBoard(board));
   }
 }
 

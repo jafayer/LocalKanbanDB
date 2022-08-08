@@ -3,6 +3,7 @@ import boardSlice from "./redux/boardSlice";
 import columnSlice from "./redux/columnSlice";
 import cardSlice from "./redux/cardSlice";
 import activeBoardSlice from "./redux/activeBoardSlice";
+import loadingSlice from "./redux/loadingSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     columns: columnSlice,
     cards: cardSlice,
     activeBoard: activeBoardSlice,
+    loading: loadingSlice,
   },
 });
 

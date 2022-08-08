@@ -1,9 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { BoardType, ColumnType, CardType } from "../utils/definitions";
-
 export interface ActiveBoardState {
-  value: string | null;
+  value: BoardType | null;
 }
 
 const initialState: ActiveBoardState = {
@@ -14,7 +13,8 @@ export const setActiveBoardSlice = createSlice({
   name: "activeBoard",
   initialState,
   reducers: {
-    setActiveBoard: (state, action: PayloadAction<string>) => {
+    setActiveBoard: (state, action: PayloadAction<BoardType>) => {
+      console.log({ payload: action.payload });
       state.value = action.payload;
     },
   },

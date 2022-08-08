@@ -4,63 +4,78 @@ import "./index.css";
 
 import { BoardType, ColumnType, CardType } from "./utils/definitions";
 import {
-  asyncGetAllBoards,
-  asyncGetAllCards,
-  asyncGetAllColumns,
+  asyncGetAllItems,
+  asyncAddItem,
+  asyncGetItems,
+  asyncUpdateItem,
+  clearEntireDatabase,
+  subscribeToQuery,
+  subscribeToCollection,
+  asyncDeleteItem,
 } from "./utils/db";
+import { generateNewBoard } from "./utils/generate";
 //@ts-ignore
 import Sidebar from "./components/sidebar/Sidebar";
 //@ts-ignore
 import Main from "./components/main/Main";
 //@ts-ignore
 
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector, useDispatch, RootState } from "react-redux";
 
 import { addBoard, removeBoard } from "./redux/boardSlice";
-import { addColumn, removeColumn } from "./redux/columnSlice";
+import { addColumns, clearColumns, setColumns } from "./redux/columnSlice";
 import { addCard, removeCard } from "./redux/cardSlice";
 import { setActiveBoard } from "./redux/activeBoardSlice";
+import { setLoading } from "./redux/loadingSlice";
+import { kanbanDB } from "./utils/db";
 
 function App() {
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    asyncGetAllBoards()
-      .then((boardsData: BoardType[]) => {
-        // boards is data from db
-        console.log({ boardsData });
-        // sort boardsData by Order
-        const sortedBoardsData = boardsData.sort((a, b) => {
-          return a.order - b.order;
-        });
+  const isLoading = useSelector((state: RootState) => state.loading.isLoading);
 
-        dispatch(addBoard(sortedBoardsData));
-        // find board with lowest order number and set as active board
-        const activeBoard = boardsData.reduce(
-          (prev: BoardType, curr: BoardType) =>
-            prev.order < curr.order ? prev : curr
-        );
-        dispatch(setActiveBoard(activeBoard.id));
-      })
-      .then(() => {
-        return asyncGetAllColumns();
-      })
-      .then((columnsData: ColumnType[]) => {
-        console.log({ columnsData });
-        dispatch(addColumn(columnsData));
-      })
-      .then(() => {
-        return asyncGetAllCards();
-      })
-      .then((cardsData: CardType[]) => {
-        console.log({ cardsData });
-        dispatch(addCard(cardsData));
-      });
-  });
+  asyncGetAllItems("boards")
+    .then((boards: any) => {
+      dispatch(addBoard(boards));
+
+      // sort boards by least to greatest order
+      const activeBoard = boards.sort(
+        (a: BoardType, b: BoardType) => b.order - a.order
+      )[0];
+      dispatch(setActiveBoard(activeBoard));
+      return asyncGetItems("columns", activeBoard.columns);
+    })
+    .then((columns: any) => {
+      dispatch(setColumns(columns));
+    })
+    .then(() => {
+      dispatch(setLoading(false));
+    });
+
+  // const boards = useSelector((state: RootState) => state.boards.value) || [];
+
+  // asyncGetAllItems("boards")
+  //   .then((boards) => boards.sort((a, b) => a.order - b.order))
+  //   .then((boards: any) => {
+  //     dispatch(setActiveBoard(boards[0].id));
+  //     dispatch(addBoard(boards));
+
+  //     return asyncGetItems("columns", boards[0].columns as string[]);
+  //   })
+  //   .then((activeColumns: any) => {
+  //     console.log(activeColumns);
+  //     dispatch(clearColumns());
+  //     dispatch(addColumns(activeColumns));
+  //   });
+
   return (
     <div className="App">
-      <Sidebar />
-      <Main />
+      {!isLoading && (
+        <>
+          <Sidebar />
+          <Main />
+        </>
+      )}
     </div>
   );
 }

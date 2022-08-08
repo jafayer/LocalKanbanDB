@@ -14,7 +14,7 @@ export const columnSlice = createSlice({
   name: "columns",
   initialState,
   reducers: {
-    addColumn: (state, action: PayloadAction<ColumnType[]>) => {
+    addColumns: (state, action: PayloadAction<ColumnType[]>) => {
       // only ids that are not in the state
       const toPush = action.payload.filter(
         (column) => !state.value.some((c) => c.id === column.id)
@@ -26,10 +26,30 @@ export const columnSlice = createSlice({
         (column) => column.id !== action.payload.id
       );
     },
+    clearColumns: (state) => {
+      state.value = [];
+    },
+
+    setColumns: (state, action: PayloadAction<ColumnType[]>) => {
+      state.value = action.payload;
+    },
+
+    updateColumn: (state, action: PayloadAction<ColumnType>) => {
+      const index = state.value.findIndex(
+        (column) => column.id === action.payload.id
+      );
+      state.value[index] = action.payload;
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { addColumn, removeColumn } = columnSlice.actions;
+export const {
+  addColumns,
+  removeColumn,
+  setColumns,
+  clearColumns,
+  updateColumn,
+} = columnSlice.actions;
 
 export default columnSlice.reducer;
