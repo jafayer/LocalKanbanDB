@@ -36,37 +36,19 @@ function App() {
 
   asyncGetAllItems("boards")
     .then((boards: any) => {
+      const ordered =
+        boards.sort((a: BoardType, b: BoardType) => a.order - b.order) || [];
+
       dispatch(addBoard(boards));
 
       // sort boards by least to greatest order
-      const activeBoard = boards.sort(
-        (a: BoardType, b: BoardType) => b.order - a.order
-      )[0];
+      const activeBoard = ordered ? ordered[0] : null;
+
       dispatch(setActiveBoard(activeBoard));
-      return asyncGetItems("columns", activeBoard.columns);
-    })
-    .then((columns: any) => {
-      dispatch(setColumns(columns));
     })
     .then(() => {
       dispatch(setLoading(false));
     });
-
-  // const boards = useSelector((state: RootState) => state.boards.value) || [];
-
-  // asyncGetAllItems("boards")
-  //   .then((boards) => boards.sort((a, b) => a.order - b.order))
-  //   .then((boards: any) => {
-  //     dispatch(setActiveBoard(boards[0].id));
-  //     dispatch(addBoard(boards));
-
-  //     return asyncGetItems("columns", boards[0].columns as string[]);
-  //   })
-  //   .then((activeColumns: any) => {
-  //     console.log(activeColumns);
-  //     dispatch(clearColumns());
-  //     dispatch(addColumns(activeColumns));
-  //   });
 
   return (
     <div className="App">

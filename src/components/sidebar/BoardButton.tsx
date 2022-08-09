@@ -5,18 +5,24 @@ import boardSlice from "../../redux/boardSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 
-export function BoardButton(props: { [key: string]: any }): JSX.Element {
+function BoardButton(props: { [key: string]: any }): JSX.Element {
   const dispatch = useDispatch();
 
-  const activeBoard = useSelector(
+  const activeBoardId: string | null = useSelector(
     (state: RootState) => state.activeBoard.value
   );
+
+  const activeBoard = activeBoardId
+    ? useSelector((state: RootState) =>
+        state.boards.value.find((board) => board.id === activeBoardId)
+      )
+    : null;
 
   return (
     <div
       key={props.board.id}
       className={`group boardLink flex items-center justify-evenly w-[150px] ml-auto mt-1 mb-1  text-slate-800 p-2 pl-5 rounded-tl-lg rounded-bl-lg cursor-pointer hover:bg-indigo-100 font-bold${
-        activeBoard!.id === props.board.id ? " bg-amber-400" : " bg-indigo-200"
+        activeBoard?.id === props.board.id ? " bg-amber-400" : " bg-indigo-200"
       }`}
       onClick={() => {
         props.handleSelectBoard(props.board);
@@ -35,7 +41,6 @@ export function BoardButton(props: { [key: string]: any }): JSX.Element {
           >
             <div
               onClick={(e) => {
-                console.log(e);
                 e.stopPropagation();
                 e.preventDefault();
                 props.setRenamingBoard(props.board.id);
@@ -103,3 +108,5 @@ export function BoardButton(props: { [key: string]: any }): JSX.Element {
     }
   }
 }
+
+export default BoardButton;

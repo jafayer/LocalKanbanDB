@@ -1,5 +1,5 @@
 import { EffectCallback, useEffect, useState } from "react";
-import { BoardType } from "../../utils/definitions";
+import { BoardType, ColumnType } from "../../utils/definitions";
 import {
   asyncAddItem,
   asyncGetItems,
@@ -12,7 +12,7 @@ import { addBoard, removeBoard, updateBoard } from "../../redux/boardSlice";
 import { setActiveBoard } from "../../redux/activeBoardSlice";
 import { addColumns, clearColumns } from "../../redux/columnSlice";
 
-import { BoardButton } from "./BoardButton";
+import BoardButton from "./BoardButton";
 import { RootState } from "../../store";
 import { ClipLoader } from "react-spinners";
 
@@ -28,9 +28,11 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
 
   const boards = useSelector((state: RootState) => state.boards.value);
 
-  const activeBoard = useSelector(
+  const activeBoardId = useSelector(
     (state: RootState) => state.activeBoard.value
   );
+
+  const activeBoard = boards.find((board) => board.id === activeBoardId);
 
   useEffect(() => {
     // add event listener to close sidebar when window is resized less than 768px
@@ -45,64 +47,48 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
 
     window.addEventListener("resize", handleResize);
   }, []);
-
-  if (!activeBoard) {
-    return (
-      <ClipLoader
-        color="#5046e4"
-        size="50px"
-        cssOverride={{
-          justifySelf: "center",
-          alignSelf: "center",
-          margin: "auto",
-        }}
-      />
-    );
-  } else {
-    return (
-      <div
-        className={`sidebar ${
-          isOpen ? "sidebar__content open" : ""
-        } bg-stone-900 text-white flex flex-col p-0 pb-5 pt-5`}
+  return (
+    <div
+      className={`sidebar ${
+        isOpen ? "sidebar__content open" : ""
+      } bg-stone-900 text-white flex flex-col p-0 pb-5 pt-5`}
+    >
+      <button
+        className="toggle bg-indigo-600 text-white rounded-lg p-1 font-bold transition-all hover:bg-indigo-500"
+        onClick={handleClick}
       >
-        <button
-          className="toggle bg-indigo-600 text-white rounded-lg p-1 font-bold transition-all hover:bg-indigo-500"
-          onClick={handleClick}
-        >
-          {isOpen ? "Close" : "Open"}
-        </button>
-        <div className="sidebar__header">
-          <h1 className="font-b text-xl text-center pt-5 font-bold">
-            Local Kanban Board
-          </h1>
-        </div>
-        <div className="sidebar__content flex flex-col align-top h-full">
-          <div className="flex mt-5 flex-col pt-5">
-            {boards &&
-              boards.map((board: BoardType) => (
-                <BoardButton
-                  key={board.id}
-                  board={board}
-                  setMenuIsOpen={setMenuIsOpen}
-                  setRenamingBoard={setRenamingBoard}
-                  handleSelectBoard={handleSelectBoard}
-                  openMenu={openMenu}
-                  renamingBoard={renamingBoard}
-                  activeBoard={activeBoard}
-                  handleDeleteBoard={handleDeleteBoard}
-                />
-              ))}
-          </div>
-          <button
-            className="m-auto mb-0 bg-indigo-500 w-1/2 p-3 rounded-md hover:bg-indigo-400 transition-all"
-            onClick={handleCreateBoard}
-          >
-            Add Board
-          </button>
-        </div>
+        {isOpen ? "Close" : "Open"}
+      </button>
+      <div className="sidebar__header">
+        <h1 className="font-b text-xl text-center pt-5 font-bold">
+          Local Kanban Board
+        </h1>
       </div>
-    );
-  }
+      <div className="sidebar__content flex flex-col align-top h-full">
+        <div className="flex mt-5 flex-col pt-5">
+          {boards &&
+            boards.map((board: BoardType) => (
+              <BoardButton
+                key={board.id}
+                board={board}
+                setMenuIsOpen={setMenuIsOpen}
+                setRenamingBoard={setRenamingBoard}
+                handleSelectBoard={handleSelectBoard}
+                openMenu={openMenu}
+                renamingBoard={renamingBoard}
+                handleDeleteBoard={handleDeleteBoard}
+              />
+            ))}
+        </div>
+        <button
+          className="m-auto mb-0 bg-indigo-500 w-1/2 p-3 rounded-md hover:bg-indigo-400 transition-all"
+          onClick={handleCreateBoard}
+        >
+          Add Board
+        </button>
+      </div>
+    </div>
+  );
 
   function handleCreateBoard(): void {
     const newBoard = generateNewBoard(boards.slice().length);
@@ -115,7 +101,8 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
     e.stopPropagation();
     e.preventDefault();
 
-    if (board.id === activeBoard!.id) {
+    if (board.id === activeBoardId) {
+      console.log("this should run!");
       const oldActiveIndex = boards.findIndex(
         (b: BoardType) => b.id === activeBoard!.id
       );
@@ -123,7 +110,7 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
 
       const newActiveBoard = boards
         .slice()
-        .sort((a: any, b: any) => b.order - a.order)[newActiveIndex];
+        .sort((a: any, b: any) => a.order - b.order)[newActiveIndex];
 
       handleSelectBoard(newActiveBoard);
     }
@@ -138,12 +125,13 @@ function Sidebar(props: { [key: string]: any }): JSX.Element {
   }
 
   async function handleSelectBoard(board: BoardType): Promise<void> {
-    dispatch(setActiveBoard(board));
-    asyncGetItems("columns", board.columns as string[]).then((columns) => {
-      console.log(columns);
-      dispatch(clearColumns());
-      dispatch(addColumns(columns));
-    });
+    if (board) {
+      dispatch(setActiveBoard(board));
+      asyncGetItems("columns", board.columns).then((columns: ColumnType[]) => {
+        dispatch(clearColumns());
+        dispatch(addColumns(columns));
+      });
+    }
   }
 
   async function handleRenameBoard(

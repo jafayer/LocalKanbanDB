@@ -12,7 +12,7 @@ export type BoardType = {
   order: number;
   createdAt: number;
   updatedAt: number | null;
-  columns: String[];
+  columns: ColumnType[];
   archived: boolean;
 };
 
@@ -36,11 +36,15 @@ export const boardSchema = {
     createdAt: {
       type: "number",
     },
+    columns: {
+      type: "array",
+      uniqueItems: true,
+    },
     updatedAt: {
       type: "number",
     },
   },
-  required: ["id", "name", "order", "createdAt"],
+  required: ["id", "name", "order", "columns", "createdAt"],
   indexes: ["id"],
 };
 
@@ -66,7 +70,7 @@ export type ColumnType = {
   order: number;
   createdAt: number;
   updatedAt: number | null;
-  cards: String[];
+  cards: CardType[];
   archived: boolean;
 };
 
@@ -195,3 +199,13 @@ export type kbDatabaseCollections = {
 };
 
 export type KbDatabase = RxDatabase<kbDatabaseCollections>;
+
+export const types = {
+  BOARD: "board",
+  COLUMN: "column",
+  CARD: "card",
+};
+
+export interface ColumnDropResult {
+  id: string;
+}

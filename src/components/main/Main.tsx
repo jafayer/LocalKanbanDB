@@ -14,18 +14,24 @@ import {
 import { updateBoard } from "../../redux/boardSlice";
 import { asyncUpdateItem } from "../../utils/db";
 import { RootState } from "../../store";
-import { ClipLoader } from "react-spinners";
+
+import { createNewColumn } from "../../utils/actions";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 function Main(props: { [key: string]: any }): JSX.Element {
   const dispatch = useDispatch();
 
-  const activeBoard = useSelector(
+  const activeBoardId = useSelector(
     (state: RootState) => state.activeBoard.value
   );
 
-  const columns = useSelector((state: RootState) => state.columns.value);
+  const boards = useSelector((state: RootState) => state.boards.value);
 
-  console.log(columns);
+  const activeBoard = boards.find((board) => board.id === activeBoardId);
+
+  const columns = activeBoard?.columns;
+
   return (
     <div className="main bg-slate-50 flex-1 h-full flex flex-col">
       <div className="w-full bg-indigo-700 text-white p-5">
@@ -33,31 +39,33 @@ function Main(props: { [key: string]: any }): JSX.Element {
       </div>
       <div className="columns flex flex-1 pl-7">
         <div className="columns w-0 flex flex-1 overflow-x-scroll items-center pl-7 pr-3">
-          {columns &&
-            columns.map((column: any) => {
-              return (
-                <Column
-                  key={column.id}
-                  columnData={{
-                    id: column.id,
-                    name: column.name,
-                    cards: column.cards,
-                    order: column.order,
-                    createdAt: column.createdAt,
-                    updatedAt: column.updatedAt,
-                    archived: column.archived,
-                  }}
-                  cards={column.cards}
-                  name={column.name}
-                  handleDeleteColumn={handleDeleteColumn}
-                />
-              );
-            })}
+          <DndProvider backend={HTML5Backend}>
+            {columns &&
+              columns.map((column: any) => {
+                return (
+                  <Column
+                    key={column.id}
+                    columnData={{
+                      id: column.id,
+                      name: column.name,
+                      cards: column.cards,
+                      order: column.order,
+                      createdAt: column.createdAt,
+                      updatedAt: column.updatedAt,
+                      archived: column.archived,
+                    }}
+                    cards={column.cards}
+                    name={column.name}
+                  />
+                );
+              })}
+          </DndProvider>
         </div>
         <div className="m-3 self-center">
           <button
-            className="bg-indigo-500 text-white p-3 rounded-lg m-auto self-center"
+            className="bg-indigo-500 text-white p-3 rounded-lg m-auto self-center disabled:bg-slate-400 cursor:cancel"
             onClick={handleNewColumn}
+            disabled={!activeBoard}
           >
             Add Column
           </button>
@@ -66,34 +74,14 @@ function Main(props: { [key: string]: any }): JSX.Element {
     </div>
   );
 
-  async function handleDeleteColumn(column: ColumnType) {
-    dispatch(removeColumn(column));
-    await asyncDeleteItem("columns", column.id);
-  }
-
   async function handleNewColumn() {
-    const newColumn = generateNewColumn(columns.length);
-    // add to indexedDB
-    await asyncAddItem("columns", newColumn);
-    // console.log("Added to indexedDB");
-    // add to redux
-    dispatch(addColumns([newColumn]));
-
-    // update ActiveBoard to push new column into the board
-    const propsToUpdate = {
-      columns: [...activeBoard!.columns, newColumn.id],
-    };
-    const updatedActiveBoard: BoardType = updateExistingBoard(
-      activeBoard!,
-      propsToUpdate
+    const [propsToUpdate, updatedBoard] = createNewColumn(
+      activeBoard as BoardType
     );
 
-    console.log({ newColumn, propsToUpdate, activeBoard });
-
-    // update parent board in indexedDB
+    console.log({ activeBoard, updatedBoard });
+    dispatch(updateBoard(updatedBoard));
     await asyncUpdateItem("boards", activeBoard!.id, propsToUpdate);
-    // update parent board in redux
-    dispatch(updateBoard(updatedActiveBoard));
   }
 }
 

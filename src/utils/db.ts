@@ -17,7 +17,7 @@ import { RxDBUpdatePlugin } from "rxdb/plugins/update";
 addRxPlugin(RxDBUpdatePlugin);
 
 export const kanbanDB: KbDatabase = await createRxDatabase<KbDatabase>({
-  name: "LocalKanbanDB",
+  name: "LocalKanbanDB2",
   storage: getRxStorageDexie(),
 });
 
