@@ -25,10 +25,12 @@ export function Card(props: { [key: string]: any }): JSX.Element {
     <div
       ref={drag}
       data-testid={`card`}
-      className={`card p-3 bg-white mt-3 mb-3 rounded-lg shadow-lg flex flex-col opacity-${opacity}`}
+      className={`group card p-3 bg-white mt-3 mb-3 rounded-lg shadow-lg flex flex-col opacity-${opacity} cursor-${
+        isDragging ? "grabbing" : "grab"
+      }`}
     >
       <div className="header font-bold">
-        <h3>{props.card.title}</h3>
+        <h3 className="cursor-grab">{props.card.title}</h3>
       </div>
       <div className="content">
         <p>{props.card.description}</p>
